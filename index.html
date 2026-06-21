@@ -150,6 +150,44 @@
   footer{padding:50px 24px;text-align:center;color:var(--muted);border-top:1px solid var(--line);font-size:14px}
 
   .divider-svg{display:block;width:100%;height:60px;margin:-30px 0 0}
+
+  /* 3D viewer */
+  .viewer-wrap{margin-top:40px;position:relative;border:1px solid var(--line);border-radius:20px;
+    overflow:hidden;background:radial-gradient(900px 500px at 50% 0%,rgba(6,184,95,.14),transparent 60%),var(--bg2);
+    box-shadow:inset 0 0 60px rgba(6,184,95,.08),0 0 40px rgba(6,184,95,.12)}
+  .viewer-canvas{display:block;width:100%;height:min(70vh,560px);cursor:grab;touch-action:none}
+  .viewer-canvas:active{cursor:grabbing}
+  .viewer-hud{position:absolute;left:16px;top:16px;display:flex;flex-direction:column;gap:8px;
+    pointer-events:none;font-size:12px;color:var(--muted);letter-spacing:.5px}
+  .viewer-hud .badge{pointer-events:none;display:inline-flex;align-items:center;gap:8px;
+    background:rgba(4,12,9,.55);border:1px solid var(--line);border-radius:30px;padding:6px 14px;
+    backdrop-filter:blur(6px);width:max-content}
+  .viewer-hud .badge .dot{width:7px;height:7px;border-radius:50%;background:var(--neon);box-shadow:var(--glow)}
+  .viewer-controls{position:absolute;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;align-items:center;
+    gap:18px;padding:16px 18px;background:linear-gradient(0deg,rgba(3,10,7,.85),transparent)}
+  .viewer-controls .ctl{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;font-weight:600}
+  .viewer-controls .ctl label{white-space:nowrap;letter-spacing:.5px}
+  .viewer-controls input[type=range]{-webkit-appearance:none;appearance:none;height:4px;width:160px;border-radius:4px;
+    background:linear-gradient(90deg,var(--neon),rgba(33,255,143,.15));outline:none;cursor:pointer}
+  .viewer-controls input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:16px;height:16px;border-radius:50%;background:var(--neon-bright);box-shadow:var(--glow);cursor:pointer}
+  .viewer-controls input[type=range]::-moz-range-thumb{width:16px;height:16px;border:none;border-radius:50%;
+    background:var(--neon-bright);box-shadow:var(--glow);cursor:pointer}
+  .vbtn{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:30px;cursor:pointer;
+    font-size:13px;font-weight:700;color:var(--neon-bright);background:rgba(33,255,143,.08);
+    border:1px solid var(--line);transition:.25s}
+  .vbtn:hover{border-color:var(--neon);box-shadow:var(--glow);color:#fff}
+  .vbtn.on{background:var(--neon);color:var(--bg);border-color:var(--neon)}
+  .viewer-loader{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:16px;color:var(--muted);font-weight:600;letter-spacing:1px;background:var(--bg2);transition:opacity .6s;z-index:2}
+  .viewer-loader.hide{opacity:0;pointer-events:none}
+  .viewer-loader .ring{width:46px;height:46px;border-radius:50%;border:3px solid rgba(33,255,143,.18);
+    border-top-color:var(--neon-bright);animation:spin 1s linear infinite}
+  .viewer-loader .err{max-width:420px;text-align:center;color:var(--muted);font-weight:500;line-height:1.5}
+  .viewer-loader .err code{color:var(--neon-bright);background:rgba(33,255,143,.1);padding:2px 7px;border-radius:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media(max-width:560px){.viewer-controls input[type=range]{width:110px}}
+
   /* scroll progress */
   .progress{position:fixed;top:0;left:0;height:3px;width:0;z-index:99;
     background:linear-gradient(90deg,var(--cyan),var(--neon),var(--neon-deep));box-shadow:var(--glow)}
@@ -380,6 +418,39 @@
           <li>Power the AI, lights &amp; all devices inside.</li>
           <li>Completely off-grid and self-sufficient.</li>
         </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3D VIEWER -->
+<section id="viewer">
+  <div class="wrap">
+    <div class="section-tag reveal">Interactive 3D Model</div>
+    <h2 class="reveal">Step <span class="accent">inside</span> the pod</h2>
+    <p class="lead reveal">Drag to orbit, scroll to zoom, and slide the cut-away to peel back the
+      container walls and explore the real interior of our build.</p>
+
+    <div class="viewer-wrap reveal" id="viewerWrap">
+      <canvas class="viewer-canvas" id="viewerCanvas"></canvas>
+
+      <div class="viewer-hud">
+        <span class="badge"><span class="dot"></span>CargoClass · Pod v1</span>
+      </div>
+
+      <div class="viewer-loader" id="viewerLoader">
+        <div class="ring"></div>
+        <div>Loading 3D model…</div>
+      </div>
+
+      <div class="viewer-controls">
+        <button class="vbtn" id="roofBtn" type="button">⤒ Open roof</button>
+        <div class="ctl">
+          <label for="cutSlider">Cut-away</label>
+          <input type="range" id="cutSlider" min="0" max="100" value="0" />
+        </div>
+        <button class="vbtn on" id="spinBtn" type="button">◐ Auto-spin</button>
+        <button class="vbtn" id="resetBtn" type="button">⟲ Reset view</button>
       </div>
     </div>
   </div>
@@ -631,6 +702,263 @@
     tick();sio.unobserve(el);
   });},{threshold:.6});
   document.querySelectorAll('.num').forEach(el=>sio.observe(el));
+</script>
+
+<!-- ===== 3D OBJ viewer (Three.js) ===== -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+  import * as THREE from 'three';
+  import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+  const canvas = document.getElementById('viewerCanvas');
+  const wrap   = document.getElementById('viewerWrap');
+  const loader = document.getElementById('viewerLoader');
+  const cutSlider = document.getElementById('cutSlider');
+  const spinBtn = document.getElementById('spinBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const roofBtn = document.getElementById('roofBtn');
+
+  // The roof is modelled as a separate sub-object (obj_23) lying flat beside the
+  // container in the Tinkercad export. We split it out so it can be placed on top
+  // and hinged open.
+  const ROOF_OBJ = 'obj_23';
+
+  function showError(msg){
+    loader.classList.remove('hide');
+    loader.innerHTML = '<div class="err">'+msg+'</div>';
+  }
+
+  // Tinkercad exports encode each face colour in its material name as a signed
+  // 32-bit int (e.g. "color_16777215"). We mask the low 24 bits to get RGB —
+  // this lets us colour the model authentically without the missing .mtl file.
+  function colorFromName(name){
+    const m = /color_(-?\d+)/.exec(name);
+    if(!m) return [0.6,0.85,0.7];
+    const n = (parseInt(m[1],10) >>> 0) & 0xffffff;
+    // sRGB -> approx linear so colours look right under lighting
+    const f = v => { v/=255; return v<=0.04045 ? v/12.92 : Math.pow((v+0.055)/1.055,2.4); };
+    return [ f((n>>16)&255), f((n>>8)&255), f(n&255) ];
+  }
+
+  // Minimal OBJ parser. Routes each face into the "body" or "roof" bucket based on
+  // the active `o` object, keeping per-vertex colours from the active usemtl and
+  // triangulating n-gon faces with a fan. Returns the two geometries (raw coords).
+  function parseOBJ(text){
+    const verts = [];                                   // flat [x,y,z, ...]
+    const buckets = { body:{pos:[],col:[]}, roof:{pos:[],col:[]} };
+    let cur = colorFromName('');
+    let target = buckets.body;
+    const lines = text.split('\n');
+    for(let i=0;i<lines.length;i++){
+      const line = lines[i];
+      if(line.charCodeAt(0)===118 && line[1]===' '){            // "v "
+        const p = line.split(/\s+/);
+        verts.push(+p[1], +p[2], +p[3]);
+      } else if(line[0]==='f' && line[1]===' '){                 // "f "
+        const p = line.trim().split(/\s+/);
+        const idx = [];
+        for(let k=1;k<p.length;k++){
+          let v = parseInt(p[k],10);              // first token before any '/'
+          if(v<0) v = verts.length/3 + v + 1;     // negative = relative index
+          idx.push((v-1)*3);
+        }
+        for(let k=1;k<idx.length-1;k++){          // triangle fan
+          const tri = [idx[0], idx[k], idx[k+1]];
+          for(const a of tri){
+            target.pos.push(verts[a], verts[a+1], verts[a+2]);
+            target.col.push(cur[0], cur[1], cur[2]);
+          }
+        }
+      } else if(line[0]==='o' && line[1]===' '){
+        target = (line.slice(2).trim() === ROOF_OBJ) ? buckets.roof : buckets.body;
+      } else if(line.startsWith('usemtl')){
+        cur = colorFromName(line);
+      }
+    }
+    const build = b => {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(b.pos,3));
+      g.setAttribute('color', new THREE.Float32BufferAttribute(b.col,3));
+      g.computeVertexNormals();
+      g.computeBoundingBox();
+      return g;
+    };
+    return { bodyGeo: build(buckets.body), roofGeo: build(buckets.roof) };
+  }
+
+  // ---- scene ----
+  const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.localClippingEnabled = true;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 5000);
+
+  scene.add(new THREE.HemisphereLight(0xbff6d8, 0x07130d, 1.1));
+  const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(1,1.4,1); scene.add(key);
+  const fill = new THREE.DirectionalLight(0x6cffb0, 0.5); fill.position.set(-1,0.4,-1); scene.add(fill);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.25));
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+
+  // spinner (auto-rotate about world up) -> root (Tinkercad Z-up -> our Y-up)
+  const spinner = new THREE.Group();
+  const root = new THREE.Group();
+  root.rotation.x = -Math.PI/2;          // raw (x,y,z) -> world (x, z, -y): Z becomes up
+  spinner.add(root);
+  scene.add(spinner);
+
+  // roof hinges around this pivot (a top edge of the container)
+  const roofPivot = new THREE.Group();
+  root.add(roofPivot);
+
+  const clipPlane = new THREE.Plane(new THREE.Vector3(0,-1,0), 0); // body cut, top-down (Y)
+  const roofClip  = new THREE.Plane(new THREE.Vector3(0,-1,0), 0); // roof's own cut plane
+  let autoSpin = true, ready = false;
+  let fitDist = 100, clipRange = [0,0];
+  const OPEN_ANGLE = -2.15;               // radians the lid swings open
+  let roofOpen = false, roofT = 0;        // 0 = closed, 1 = fully open
+
+  function resetView(){
+    camera.position.set(fitDist*0.62, fitDist*0.5, fitDist*0.82);
+    controls.target.set(0,0,0);
+    camera.near = fitDist/100; camera.far = fitDist*20; camera.updateProjectionMatrix();
+    controls.update();
+  }
+
+  function resize(){
+    const w = wrap.clientWidth, h = canvas.clientHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w/h; camera.updateProjectionMatrix();
+  }
+
+  const smooth = t => t*t*(3-2*t);        // smoothstep easing
+
+  function animate(){
+    requestAnimationFrame(animate);
+    if(autoSpin && ready) spinner.rotation.y += 0.0035;
+    // ease the roof toward its target open/closed state
+    const goal = roofOpen ? 1 : 0;
+    if(roofT !== goal){
+      roofT += Math.sign(goal-roofT) * 0.04;
+      roofT = Math.max(0, Math.min(1, roofT));
+      roofPivot.rotation.x = OPEN_ANGLE * smooth(roofT);
+    }
+    // While the lid is lifted it rises above the cut plane, so disable the roof's
+    // clip; only when fully closed does it slice along with the body.
+    roofClip.constant = roofT > 0.001 ? clipRange[1] + 1e5 : clipPlane.constant;
+    controls.update();
+    renderer.render(scene, camera);
+  }
+
+  // ---- controls wiring ----
+  cutSlider.addEventListener('input', ()=>{
+    const t = cutSlider.value/100;
+    // plane keeps fragments where y <= constant; sweep constant from the top edge
+    // down to the bottom to slice the model open from above.
+    clipPlane.constant = clipRange[1] - (clipRange[1]-clipRange[0]) * t;
+  });
+  spinBtn.addEventListener('click', ()=>{
+    autoSpin = !autoSpin;
+    spinBtn.classList.toggle('on', autoSpin);
+  });
+  roofBtn.addEventListener('click', ()=>{
+    roofOpen = !roofOpen;
+    roofBtn.classList.toggle('on', roofOpen);
+    roofBtn.textContent = roofOpen ? '⤓ Close roof' : '⤒ Open roof';
+  });
+  resetBtn.addEventListener('click', ()=>{
+    spinner.rotation.y = 0;
+    cutSlider.value = 0; clipPlane.constant = clipRange[1];
+    resetView();
+  });
+  controls.addEventListener('start', ()=>{ autoSpin = false; spinBtn.classList.remove('on'); });
+  addEventListener('resize', resize);
+
+  // ---- load ----
+  fetch('tinker.obj')
+    .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
+    .then(text => {
+      const { bodyGeo, roofGeo } = parseOBJ(text);
+      const mat = plane => new THREE.MeshStandardMaterial({
+        vertexColors:true, roughness:0.65, metalness:0.1,
+        side:THREE.DoubleSide, clippingPlanes:[plane], clipShadows:true
+      });
+
+      const bb = bodyGeo.boundingBox;                  // container body (raw, Z-up)
+      const rb = roofGeo.boundingBox;                  // roof slab lying beside it
+      const rC = new THREE.Vector3(); rb.getCenter(rC);
+
+      // The roof must line up with the container's top OPENING, not the body's full
+      // bounding box — the door steps poke out the front and would drag a box-centred
+      // roof forward. So measure the footprint of just the top rim (vertices within a
+      // band of the body's highest point) and centre the roof on that.
+      const bp = bodyGeo.attributes.position.array;
+      const zTop = bb.max.z, band = 5;
+      let xMin=Infinity,xMax=-Infinity,yMin=Infinity,yMax=-Infinity;
+      for(let i=0;i<bp.length;i+=3){
+        if(bp[i+2] >= zTop - band){
+          if(bp[i]<xMin)xMin=bp[i]; if(bp[i]>xMax)xMax=bp[i];
+          if(bp[i+1]<yMin)yMin=bp[i+1]; if(bp[i+1]>yMax)yMax=bp[i+1];
+        }
+      }
+      const rimCx = (xMin+xMax)/2, rimCy = (yMin+yMax)/2;
+
+      // 1) Move the roof from beside the container to resting on top: centre it over
+      //    the top-rim footprint and drop its underside onto the body's top (raw Z).
+      //    bb.max.z is the highest point (corner castings), which sits a little above
+      //    the wall rim — seat the roof ROOF_DROP units lower so it rests flush.
+      const ROOF_DROP = 3;
+      const roofZ = bb.max.z - ROOF_DROP;
+      roofGeo.translate(rimCx - rC.x, rimCy - rC.y, roofZ - rb.min.z);
+
+      // 2) Re-origin the roof to a hinge line along the back top edge (rim) so
+      //    rotating roofPivot.x swings it open like a lid.
+      const hinge = new THREE.Vector3(0, yMax, roofZ);
+      roofGeo.translate(-hinge.x, -hinge.y, -hinge.z);
+      roofPivot.position.copy(hinge);
+
+      root.add(new THREE.Mesh(bodyGeo, mat(clipPlane)));
+      roofPivot.add(new THREE.Mesh(roofGeo, mat(roofClip)));
+
+      // 3) Centre the whole assembly at the world origin so auto-spin turns in place
+      //    and the container stays planted on its base.
+      root.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(root);
+      const ctr = new THREE.Vector3(); box.getCenter(ctr);
+      root.position.sub(ctr);                          // shift so centre -> origin
+      root.updateMatrixWorld(true);
+
+      const worldBox = new THREE.Box3().setFromObject(root);
+      const size = new THREE.Vector3(); worldBox.getSize(size);
+      const radius = Math.max(size.x,size.y,size.z) * 0.5;
+      fitDist = radius / Math.tan((camera.fov*Math.PI/180)/2) * 1.5;
+      // vertical cut: sweep a horizontal plane from the top down. The model only
+      // auto-spins about Y, so its height bounds stay fixed and map the slider cleanly.
+      clipRange = [worldBox.min.y, worldBox.max.y];
+      clipPlane.constant = clipRange[1];               // cut=0 → whole model kept
+      resetView();
+
+      ready = true;
+      resize();
+      loader.classList.add('hide');
+      animate();
+    })
+    .catch(err => {
+      showError('Could not load <code>tinker.obj</code> (' + err.message + ').<br><br>' +
+        'If you opened this file directly, browsers block local model loading. ' +
+        'Serve the folder over HTTP — e.g. run <code>python -m http.server</code> in this directory and open ' +
+        '<code>http://localhost:8000</code>.');
+    });
 </script>
 </body>
 </html>
