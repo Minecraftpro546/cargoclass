@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CargoClass — Schools, Delivered.</title>
+<style>
+  :root{
+    --bg:#030a07;
+    --bg2:#061410;
+    --neon:#1fdd6f;
+    --neon-bright:#5cff9e;
+    --neon-deep:#06b85f;
+    --cyan:#0effc0;
+    --green:#21ff8f;
+    --green-deep:#06b85f;
+    --ink:#e8fff2;
+    --muted:#9fd4ba;
+    --card:rgba(13,38,26,.55);
+    --line:rgba(33,255,143,.28);
+    --glow:0 0 18px rgba(33,255,143,.55), 0 0 48px rgba(6,184,95,.25);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    overflow-x:hidden;
+    line-height:1.6;
+  }
+  /* animated grid + glow backdrop */
+  .bg-fx{position:fixed;inset:0;z-index:-2;background:
+    radial-gradient(1200px 700px at 70% -10%, rgba(6,184,95,.18), transparent 60%),
+    radial-gradient(900px 600px at 0% 100%, rgba(14,255,192,.12), transparent 55%),
+    linear-gradient(180deg,var(--bg),var(--bg2));
+  }
+  .grid-fx{position:fixed;inset:0;z-index:-1;opacity:.35;
+    background-image:linear-gradient(rgba(33,255,143,.07) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(33,255,143,.07) 1px,transparent 1px);
+    background-size:46px 46px;
+    mask-image:radial-gradient(circle at 50% 30%,#000 0%,transparent 80%);
+    animation:gridmove 18s linear infinite;
+  }
+  @keyframes gridmove{to{background-position:46px 46px,46px 46px}}
+
+  /* green scroll line */
+  .scroll-line{position:absolute;top:0;left:0;width:100%;z-index:-1;pointer-events:none}
+  .scroll-line svg{width:100%;height:100%;display:block}
+  /* one light drop-shadow softens the edge without repainting a huge blur each frame */
+  #linePath{filter:drop-shadow(0 0 7px rgba(33,255,143,.85))}
+  .lcore{filter:drop-shadow(0 0 5px rgba(236,255,244,.95)) drop-shadow(0 0 11px rgba(92,255,158,.8))}
+  /* glowing head riding the tip of the line — restores a soft diffuse cap over the clip's flat cut */
+  .line-head{position:absolute;width:14px;height:14px;border-radius:50%;transform:translate(-50%,-50%);
+    pointer-events:none;
+    background:radial-gradient(circle,#f4fff9 0%,rgba(120,255,180,.85) 30%,rgba(46,255,160,.35) 55%,transparent 72%);
+    box-shadow:0 0 10px 3px rgba(140,255,190,.9),0 0 22px 8px rgba(46,255,160,.6),0 0 44px 16px rgba(33,255,143,.35)}
+
+  header.nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;
+    justify-content:space-between;padding:16px 28px;backdrop-filter:blur(10px);
+    background:linear-gradient(180deg,rgba(4,7,15,.85),rgba(4,7,15,0));border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:.5px;font-size:20px}
+  .brand .logo{width:34px;height:34px;filter:drop-shadow(var(--glow))}
+  .nav-links{display:flex;gap:22px}
+  .nav-links a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:600;transition:.25s}
+  .nav-links a:hover{color:var(--neon-bright);text-shadow:var(--glow)}
+  @media(max-width:760px){.nav-links{display:none}}
+
+  section{padding:96px 24px;position:relative}
+  .wrap{max-width:1120px;margin:0 auto}
+  .eyebrow{display:inline-block;font-size:12px;letter-spacing:4px;text-transform:uppercase;color:var(--neon);
+    border:1px solid var(--line);padding:6px 14px;border-radius:30px;margin-bottom:22px;
+    box-shadow:inset 0 0 16px rgba(33,255,143,.12)}
+  h1{font-size:clamp(44px,9vw,104px);font-weight:900;letter-spacing:-2px;line-height:.95}
+  h2{font-size:clamp(30px,5vw,52px);font-weight:850;letter-spacing:-1px;margin-bottom:14px}
+  h2 .accent,.neon{color:var(--neon-bright);text-shadow:var(--glow)}
+  .lead{color:var(--muted);font-size:clamp(16px,2.2vw,20px);max-width:680px}
+  .section-tag{color:var(--neon);font-weight:700;letter-spacing:3px;text-transform:uppercase;font-size:13px;margin-bottom:10px}
+
+  /* HERO */
+  .hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding-top:120px}
+  .hero h1 .grad{background:linear-gradient(100deg,#fff,var(--neon-bright) 40%,var(--neon-deep));
+    -webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 26px rgba(33,255,143,.45))}
+  .authors{margin-top:26px;color:var(--muted);font-weight:600;letter-spacing:1px}
+  .mission{margin-top:18px;font-size:clamp(17px,2.4vw,22px);max-width:720px;color:var(--ink)}
+  .cta{margin-top:40px;display:flex;gap:16px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:10px;padding:14px 26px;border-radius:40px;text-decoration:none;
+    font-weight:700;font-size:15px;border:1px solid var(--neon);color:var(--bg);background:var(--neon);
+    box-shadow:var(--glow);transition:.3s}
+  .btn:hover{transform:translateY(-3px);box-shadow:0 0 26px rgba(33,255,143,.8),0 0 60px rgba(6,184,95,.4)}
+  .btn.ghost{background:transparent;color:var(--neon-bright);box-shadow:none}
+  .btn.ghost:hover{background:rgba(33,255,143,.1)}
+
+  .hero-art{position:absolute;right:-40px;top:50%;transform:translateY(-50%);width:min(46vw,560px);opacity:.9;z-index:-1}
+  @media(max-width:900px){.hero-art{opacity:.18;right:-10%;width:90vw}}
+
+  /* SVG draw animation */
+  .draw path,.draw line,.draw circle,.draw rect,.draw polyline,.draw polygon{
+    stroke-dasharray:1400;stroke-dashoffset:1400;transition:stroke-dashoffset 2.4s ease}
+  .draw.in path,.draw.in line,.draw.in circle,.draw.in rect,.draw.in polyline,.draw.in polygon{stroke-dashoffset:0}
+  .glow-stroke{filter:drop-shadow(0 0 6px rgba(33,255,143,.8))}
+
+  /* reveal */
+  .reveal{opacity:0;transform:translateY(34px);transition:.8s cubic-bezier(.2,.7,.2,1)}
+  .reveal.in{opacity:1;transform:none}
+
+  /* cards */
+  .grid{display:grid;gap:22px;margin-top:40px}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:820px){.g2,.g3{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px;position:relative;
+    overflow:hidden;backdrop-filter:blur(6px);transition:.35s}
+  .card:hover{transform:translateY(-6px);border-color:var(--neon);box-shadow:var(--glow)}
+  .card::before{content:"";position:absolute;top:0;left:-60%;width:60%;height:100%;
+    background:linear-gradient(90deg,transparent,rgba(92,255,158,.12),transparent);transition:.6s}
+  .card:hover::before{left:120%}
+  .card .ic{width:52px;height:52px;margin-bottom:16px}
+  .card h3{font-size:20px;margin-bottom:10px;color:var(--neon-bright)}
+  .card p,.card li{color:var(--muted);font-size:15px}
+  .card ul{list-style:none;margin-top:8px}
+  .card li{padding-left:22px;position:relative;margin:8px 0}
+  .card li::before{content:"";position:absolute;left:0;top:9px;width:9px;height:9px;border-radius:50%;
+    background:var(--neon);box-shadow:var(--glow)}
+
+  /* stats */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:50px}
+  @media(max-width:820px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{text-align:center;padding:26px 14px;border:1px solid var(--line);border-radius:16px;background:var(--card)}
+  .stat .num{font-size:clamp(30px,5vw,46px);font-weight:900;color:var(--neon-bright);text-shadow:var(--glow)}
+  .stat .lbl{color:var(--muted);font-size:13px;letter-spacing:1px;text-transform:uppercase;margin-top:6px}
+
+  /* timeline reach */
+  .pyramid{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:30px}
+  .tier{position:relative;text-align:center;padding:14px 0;color:var(--ink);font-weight:700;
+    border:1px solid var(--neon);border-radius:8px;background:rgba(33,255,143,.06);box-shadow:inset 0 0 20px rgba(33,255,143,.12)}
+  .tier small{display:block;color:var(--muted);font-weight:500;font-size:12px}
+
+  .split{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}
+  @media(max-width:820px){.split{grid-template-columns:1fr}}
+
+  .pill{display:inline-block;font-size:12px;color:var(--neon);border:1px solid var(--line);border-radius:20px;
+    padding:4px 12px;margin:0 6px 8px 0}
+
+  /* conclusion */
+  .finale{text-align:center}
+  .finale .quote{font-size:clamp(22px,3.6vw,38px);font-weight:800;max-width:900px;margin:24px auto;line-height:1.3}
+  .finale .quote .neon{display:inline}
+
+  footer{padding:50px 24px;text-align:center;color:var(--muted);border-top:1px solid var(--line);font-size:14px}
+
+  .divider-svg{display:block;width:100%;height:60px;margin:-30px 0 0}
+  /* scroll progress */
+  .progress{position:fixed;top:0;left:0;height:3px;width:0;z-index:99;
+    background:linear-gradient(90deg,var(--cyan),var(--neon),var(--neon-deep));box-shadow:var(--glow)}
+</style>
+</head>
+<body>
+<div class="bg-fx"></div>
+<div class="grid-fx"></div>
+
+<!-- scroll-driven green line running through the whole site -->
+<div class="scroll-line" id="scrollLine">
+  <svg id="lineSvg" preserveAspectRatio="none" fill="none">
+    <defs>
+      <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#0effc0"/>
+        <stop offset="1" stop-color="#06b85f"/>
+      </linearGradient>
+      <!-- reveals the neon line from the top down to y = head position (document px) -->
+      <clipPath id="lineClip" clipPathUnits="userSpaceOnUse">
+        <rect id="lineClipRect" x="0" y="0" width="100" height="0"/>
+      </clipPath>
+    </defs>
+    <!-- faint full-length ghost of the route (always fully visible) -->
+    <path id="lineGhost" stroke="rgba(33,255,143,.05)" stroke-width="2" vector-effect="non-scaling-stroke"/>
+    <!-- stacked strokes = diffuse neon glow (wide+soft -> bright -> white core), revealed by the clip -->
+    <g clip-path="url(#lineClip)">
+      <path class="lglow" stroke="rgba(33,255,143,.07)" stroke-width="22" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+      <path class="lglow" stroke="rgba(33,255,143,.12)" stroke-width="13" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+      <path class="lglow" stroke="rgba(46,255,160,.22)" stroke-width="7.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+      <path class="lglow" id="linePath" stroke="url(#lineGrad)" stroke-width="4.2" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+      <path class="lglow lcore" stroke="#ecfff4" stroke-width="1.7" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    </g>
+  </svg>
+  <div class="line-head" id="lineHead"></div>
+</div>
+
+<div class="progress" id="progress"></div>
+
+<header class="nav">
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 64 64" fill="none" stroke="var(--neon-bright)" stroke-width="3">
+      <path d="M32 14C26 8 14 8 8 10v40c6-2 18-2 24 4 6-6 18-6 24-4V10c-6-2-18-2-24 4Z"/>
+      <path d="M32 18v40" stroke-width="2"/>
+      <path d="M32 14c2-6 8-8 12-7-1 5-5 9-12 11Z" fill="rgba(33,255,143,.25)"/>
+    </svg>
+    CargoClass
+  </div>
+  <nav class="nav-links">
+    <a href="#challenge">Challenge</a>
+    <a href="#problems">Problems</a>
+    <a href="#solution">Solution</a>
+    <a href="#specs">Product</a>
+    <a href="#market">Market</a>
+    <a href="#conclusion">Conclusion</a>
+  </nav>
+</header>
+
+<!-- HERO -->
+<section class="hero" id="top">
+  <svg class="hero-art draw" viewBox="0 0 400 320" fill="none" stroke="var(--neon)" stroke-width="2.4">
+    <!-- container -->
+    <rect x="40" y="150" width="300" height="120" rx="6" class="glow-stroke"/>
+    <line x1="70" y1="150" x2="70" y2="270"/><line x1="100" y1="150" x2="100" y2="270"/>
+    <line x1="130" y1="150" x2="130" y2="270"/><line x1="160" y1="150" x2="160" y2="270"/>
+    <line x1="220" y1="150" x2="220" y2="270"/><line x1="250" y1="150" x2="250" y2="270"/>
+    <line x1="280" y1="150" x2="280" y2="270"/><line x1="310" y1="150" x2="310" y2="270"/>
+    <rect x="170" y="190" width="44" height="80" rx="3" stroke="var(--cyan)"/>
+    <!-- solar panel -->
+    <polygon points="120,120 320,120 300,90 140,90" stroke="var(--neon-bright)"/>
+    <line x1="160" y1="90" x2="143" y2="120"/><line x1="200" y1="90" x2="190" y2="120"/>
+    <line x1="240" y1="90" x2="238" y2="120"/><line x1="280" y1="90" x2="285" y2="120"/>
+    <!-- sun -->
+    <circle cx="350" cy="50" r="20" stroke="var(--cyan)"/>
+    <line x1="350" y1="14" x2="350" y2="24"/><line x1="350" y1="76" x2="350" y2="86"/>
+    <line x1="314" y1="50" x2="324" y2="50"/><line x1="376" y1="50" x2="386" y2="50"/>
+  </svg>
+
+  <div class="wrap">
+    <span class="eyebrow reveal">Aarav Patel · Chethan Kothila</span>
+    <h1 class="reveal"><span class="grad">Cargo</span><span class="grad">class</span></h1>
+    <p class="mission reveal">Deploy <span class="neon">solar-powered, offline AI</span> microschools to close the global education gap for off-grid and underprivileged areas.</p>
+    <div class="cta reveal">
+      <a class="btn" href="#solution">See the Solution ↓</a>
+      <a class="btn ghost" href="#problems">The Problem</a>
+    </div>
+    <div class="stats">
+      <div class="stat reveal"><div class="num" data-target="250">0</div><div class="lbl">Million+ kids without school</div></div>
+      <div class="stat reveal"><div class="num" data-target="5">0</div><div class="lbl">Day deployment</div></div>
+      <div class="stat reveal"><div class="num" data-target="50">0</div><div class="lbl">+ Languages, offline</div></div>
+      <div class="stat reveal"><div class="num" data-target="20">0</div><div class="lbl">Year lifespan</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CHALLENGE -->
+<section id="challenge">
+  <div class="wrap">
+    <div class="section-tag reveal">Challenge Selected</div>
+    <h2 class="reveal">Education <span class="accent">Inequality</span></h2>
+    <p class="lead reveal">One of the biggest problems in the world today — and one that doesn't get enough attention. Millions of children are completely locked out of learning, not because they don't want to, but because the resources simply aren't there.</p>
+  </div>
+</section>
+
+<!-- PROBLEMS -->
+<section id="problems">
+  <div class="wrap">
+    <div class="section-tag reveal">The Problems</div>
+    <h2 class="reveal">Why kids stay <span class="accent">locked out</span></h2>
+    <div class="grid g2">
+      <div class="card reveal">
+        <svg class="ic draw" viewBox="0 0 48 48" fill="none" stroke="var(--neon)" stroke-width="2.4">
+          <path d="M6 40 24 8l18 32Z" class="glow-stroke"/><path d="M16 40l8-14 8 14"/>
+        </svg>
+        <h3>Displacement</h3>
+        <ul>
+          <li>250M+ children &amp; youth have no access to formal education.</li>
+          <li>Half of secondary-age kids miss day-to-day language &amp; basic knowledge.</li>
+          <li>Disasters take 12–24 months to rebuild a concrete school.</li>
+        </ul>
+      </div>
+      <div class="card reveal">
+        <svg class="ic draw" viewBox="0 0 48 48" fill="none" stroke="var(--neon)" stroke-width="2.4">
+          <circle cx="24" cy="24" r="16" class="glow-stroke"/><path d="M24 14v20M19 19h8a3 3 0 010 6h-6a3 3 0 000 6h8"/>
+        </svg>
+        <h3>Funding Issues</h3>
+        <ul>
+          <li>A permanent low-income school costs $20K–$75K.</li>
+          <li>NGO schools rely on single short-term grants.</li>
+          <li>Tents in underprivileged areas cost upwards of $30K — and aren't safe.</li>
+        </ul>
+      </div>
+      <div class="card reveal">
+        <svg class="ic draw" viewBox="0 0 48 48" fill="none" stroke="var(--cyan)" stroke-width="2.4">
+          <path d="M26 6 12 28h10l-4 14 18-24H24l2-12Z" class="glow-stroke"/>
+        </svg>
+        <h3>Electricity &amp; Internet</h3>
+        <ul>
+          <li>25% of schools in low-income countries have zero electricity.</li>
+          <li>Modern education needs internet — now the default everywhere.</li>
+          <li>Without a grid, children are cut off from the global economy.</li>
+        </ul>
+      </div>
+      <div class="card reveal">
+        <svg class="ic draw" viewBox="0 0 48 48" fill="none" stroke="var(--cyan)" stroke-width="2.4">
+          <circle cx="24" cy="16" r="8" class="glow-stroke"/><path d="M8 42c0-9 7-14 16-14s16 5 16 14"/>
+        </svg>
+        <h3>Teacher Shortages</h3>
+        <ul>
+          <li>Training a qualified teacher takes ~5 years.</li>
+          <li>Ratios reach 1:60 — the system is desperately scarce.</li>
+          <li>Certified teachers rarely relocate to high-risk, off-grid areas.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SOLUTION -->
+<section id="solution">
+  <div class="wrap">
+    <div class="section-tag reveal">The Solution</div>
+    <h2 class="reveal">A school, <span class="accent">delivered.</span></h2>
+    <p class="lead reveal">From delivery to active classrooms in about <span class="neon">5 days</span>. Cargo containers travel globally, snap together like LEGO, and survive anything the environment throws at them.</p>
+    <div class="grid g2">
+      <div class="card reveal">
+        <svg class="ic draw" viewBox="0 0 48 48" fill="none" stroke="var(--neon)" stroke-width="2.4">
+          <rect x="6" y="18" width="36" height="20" rx="2" class="glow-stroke"/><path d="M30 18V8h10l4 6v4M14 38a4 4 0 108 0"/><circle cx="14" cy="38" r="3"/><circle cx="36" cy="38" r="3"/>
+        </svg>
+        <h3>Infrastructure on Demand</h3>
+        <ul>
+          <li>Delivery to active classrooms in ~5 days.</li>
+          <li>Containers ship to any location on Earth.</li>
+          <li>Expand endlessly — stack and grow bigger over time.</li>
+        </ul>
+      </div>
+      <div class="card reveal">
+        <svg class="ic draw" viewBox="0 0 48 48" fill="none" stroke="var(--neon)" stroke-width="2.4">
+          <path d="M24 4 8 12v12c0 11 7 17 16 20 9-3 16-9 16-20V12L24 4Z" class="glow-stroke"/><path d="M17 24l5 5 9-10"/>
+        </svg>
+        <h3>Built for Any Environment</h3>
+        <ul>
+          <li>Steel-reinforced — ~20 year lifespan.</li>
+          <li>Fully insulated for extreme climate control.</li>
+          <li>Weatherproof: dust storms, rain storms, floods.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRODUCT SPECS -->
+<section id="specs">
+  <div class="wrap">
+    <div class="section-tag reveal">Product Specifications</div>
+    <h2 class="reveal">Inside the <span class="accent">pod</span></h2>
+    <div class="grid g3">
+      <div class="card reveal">
+        <svg class="ic draw" viewBox="0 0 48 48" fill="none" stroke="var(--neon)" stroke-width="2.4">
+          <rect x="5" y="14" width="38" height="22" rx="2" class="glow-stroke"/>
+          <line x1="14" y1="14" x2="14" y2="36"/><line x1="24" y1="14" x2="24" y2="36"/><line x1="34" y1="14" x2="34" y2="36"/>
+        </svg>
+        <h3>Cargo Container</h3>
+        <ul>
+          <li>Heavy industrial steel frames lasting 20+ years.</li>
+          <li>Easy-access doors, windows &amp; secure locks.</li>
+          <li>Configurable — connect containers to grow.</li>
+        </ul>
+      </div>
+      <div class="card reveal">
+        <svg class="ic draw" viewBox="0 0 48 48" fill="none" stroke="var(--cyan)" stroke-width="2.4">
+          <circle cx="24" cy="24" r="9" class="glow-stroke"/>
+          <path d="M24 6v6M24 36v6M6 24h6M36 24h6M11 11l4 4M33 33l4 4M37 11l-4 4M15 33l-4 4"/>
+        </svg>
+        <h3>Built-in AI</h3>
+        <ul>
+          <li>Speaks 50+ languages to reach globally.</li>
+          <li>Runs <span class="neon">fully offline</span> — built for low-income areas.</li>
+          <li>A personal teacher that adapts to every student's pace.</li>
+        </ul>
+      </div>
+      <div class="card reveal">
+        <svg class="ic draw" viewBox="0 0 48 48" fill="none" stroke="var(--neon-bright)" stroke-width="2.4">
+          <circle cx="24" cy="14" r="8" class="glow-stroke"/><path d="M24 22v8M16 30h16l4 12H12l4-12Z"/>
+        </svg>
+        <h3>Solar Powered</h3>
+        <ul>
+          <li>Panels sit on top of every container.</li>
+          <li>Power the AI, lights &amp; all devices inside.</li>
+          <li>Completely off-grid and self-sufficient.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="wrap split">
+    <div>
+      <div class="section-tag reveal">Features That Address Our Problems</div>
+      <h2 class="reveal">One campus, <span class="accent">every level</span></h2>
+      <div class="grid">
+        <div class="card reveal">
+          <h3>Diversity of Education Levels</h3>
+          <ul>
+            <li>All-in-one campus: pre-school through 12th grade.</li>
+            <li>Brain synchronization lets children learn at their own pace.</li>
+            <li>Future skillsets: digital mechanics, understanding economy &amp; more.</li>
+          </ul>
+        </div>
+        <div class="card reveal">
+          <h3>Artificial Intelligence</h3>
+          <ul>
+            <li>Zero internet needed.</li>
+            <li>Unlike humans, AI never needs a break — teach anytime.</li>
+            <li>Automated progress tracking ensures every student is educated.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="reveal">
+      <div class="pyramid">
+        <div class="tier" style="width:55%">1 · Primary Education<small>Foundations</small></div>
+        <div class="tier" style="width:78%">2 · Secondary Education<small>Core subjects &amp; skills</small></div>
+        <div class="tier" style="width:100%">3 · Early Learning<small>Where it all begins</small></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MARKET -->
+<section id="market">
+  <div class="wrap">
+    <div class="section-tag reveal">Target Market</div>
+    <h2 class="reveal">Who we <span class="accent">reach first</span></h2>
+    <div class="grid g2">
+      <div class="card reveal">
+        <span class="pill">Primary Market</span>
+        <h3>International Humanitarian NGOs</h3>
+        <ul>
+          <li>Organizations with existing traction expand our reach to a greater audience.</li>
+          <li>Their experience aiding communities gets our product out faster.</li>
+        </ul>
+      </div>
+      <div class="card reveal">
+        <span class="pill">Secondary Market</span>
+        <h3>Ministries of Education</h3>
+        <ul>
+          <li>Governments fund logistics &amp; handling to reach locations faster.</li>
+          <li>Public funding aids communities that aren't fortunate enough.</li>
+          <li>Improves education across underprivileged communities at scale.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- REACH -->
+<section id="reach">
+  <div class="wrap">
+    <div class="section-tag reveal">Reach</div>
+    <h2 class="reveal">From prototype to <span class="accent">community</span></h2>
+    <div class="grid g3">
+      <div class="card reveal">
+        <svg class="ic draw" viewBox="0 0 48 48" fill="none" stroke="var(--neon)" stroke-width="2.4">
+          <rect x="8" y="6" width="32" height="36" rx="2" class="glow-stroke"/><path d="M16 16h16M16 24h16M16 32h10"/>
+        </svg>
+        <h3>Prototypes</h3>
+        <ul>
+          <li><b>Showrooms:</b> functional small-scale prototypes for donors &amp; buyers.</li>
+          <li><b>Trials:</b> launch nearby units to gather data on students &amp; AI.</li>
+          <li><b>Testing:</b> prove the hardware withstands harsh environments.</li>
+        </ul>
+      </div>
+      <div class="card reveal">
+        <svg class="ic draw" viewBox="0 0 48 48" fill="none" stroke="var(--cyan)" stroke-width="2.4">
+          <path d="M24 6 6 16h36L24 6Z" class="glow-stroke"/><path d="M10 16v20M18 16v20M30 16v20M38 16v20M6 40h36"/>
+        </svg>
+        <h3>Existing Institutions</h3>
+        <ul>
+          <li><b>NGOs:</b> partner with UNICEF &amp; Red Cross to replace fragile tents.</li>
+          <li><b>Ministry of Education:</b> sell to national education institutions.</li>
+        </ul>
+      </div>
+      <div class="card reveal">
+        <svg class="ic draw" viewBox="0 0 48 48" fill="none" stroke="var(--neon-bright)" stroke-width="2.4">
+          <circle cx="16" cy="16" r="6" class="glow-stroke"/><circle cx="32" cy="16" r="6"/><path d="M6 40c0-7 5-11 10-11s10 4 10 11M22 40c0-7 5-11 10-11s10 4 10 11"/>
+        </svg>
+        <h3>Local Communities</h3>
+        <ul>
+          <li><b>Job Markets:</b> turn schools into local management opportunities.</li>
+          <li><b>Local Leaders:</b> showcase the innovation and bring them onboard.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY -->
+<section id="why">
+  <div class="wrap">
+    <div class="section-tag reveal">Why People Should Use CargoClass</div>
+    <h2 class="reveal">Versatile. <span class="accent">Instant.</span></h2>
+    <div class="grid g2">
+      <div class="card reveal">
+        <h3>Versatility</h3>
+        <ul>
+          <li><b>Rapid adaptation:</b> built to last any environment, anywhere.</li>
+          <li><b>Logistics:</b> shipping containers are already the main global packaging source.</li>
+          <li><b>Configurations:</b> fully stackable &amp; modular — expand as the community grows.</li>
+          <li><b>Cultures:</b> AI speaks 50+ languages for global use.</li>
+        </ul>
+      </div>
+      <div class="card reveal">
+        <h3>Instant Education</h3>
+        <ul>
+          <li>A traditional school takes months to years to build.</li>
+          <li>Our containers arrive at locations in <span class="neon">days</span>.</li>
+          <li>Setup is exceptionally easy thanks to modular classroom pods.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONCLUSION -->
+<section id="conclusion" class="finale">
+  <div class="wrap">
+    <div class="section-tag reveal" style="text-align:center">Conclusion</div>
+    <svg class="draw" viewBox="0 0 200 60" style="width:160px;margin:10px auto;display:block" fill="none" stroke="var(--cyan)" stroke-width="2">
+      <path d="M10 50 Q60 -10 100 30 T190 18" class="glow-stroke"/>
+    </svg>
+    <p class="quote reveal">We aren't just building a school — we're <span class="neon">dropping a lifeline</span>. CargoClass turns a global education crisis into a simple delivery order.</p>
+    <p class="lead reveal" style="margin:0 auto">Let's stop waiting for the perfect conditions and start shipping the solution straight to the kids who need it.</p>
+    <div class="cta reveal" style="justify-content:center">
+      <a class="btn" href="#top">Back to Top ↑</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  CargoClass — Solar-powered, offline-AI microschools · Aarav Patel &amp; Chethan Kothila
+</footer>
+
+<script>
+  // ---- green scroll line running through the site ----
+  // The whole neon path is always in the DOM; a clip rectangle reveals it from
+  // the top down to "headY" (a real document-Y coordinate). headY tracks the
+  // bottom of the viewport, so the drawn tip is pinned to the screen and can
+  // never drift behind the scroll. No path-length / dash math involved.
+  const lineWrap=document.getElementById('scrollLine');
+  const lineSvg=document.getElementById('lineSvg');
+  const lineGhost=document.getElementById('lineGhost');
+  const clipRect=document.getElementById('lineClipRect');
+  const linePaths=[...document.querySelectorAll('.lglow')];
+  const lineHead=document.getElementById('lineHead');
+  const prog=document.getElementById('progress');
+  const HEAD=0.55;        // where the drawing head sits in the viewport at the top of the page, as a fraction of viewport height (0=top edge, .5=center, 1=bottom edge). It drifts to the bottom edge as you reach the page end, so the line always draws in on-screen and completes at the bottom.
+  const SEG=520;          // vertical spacing of each curve
+  let docH=0;
+
+  // x position (in viewBox units 0..100) of the path at a given document-Y, so the
+  // glowing head dot sits exactly on the line. Each segment keeps its control point
+  // at the vertical midpoint, so y is linear in t and we can invert it directly.
+  function headX(y){
+    const k=Math.floor(y/SEG);          // which segment
+    const t=Math.min(1,Math.max(0,(y-k*SEG)/SEG));
+    const off=(k%2===0?32:-32);         // control point offset (matches buildLine's 82/18 swing)
+    return 50+2*(1-t)*t*off;
+  }
+
+  function buildLine(){
+    // largest height metric so the path always spans the full page
+    const b=document.body,e=document.documentElement;
+    docH=Math.max(e.scrollHeight,e.offsetHeight,b.scrollHeight,b.offsetHeight,e.clientHeight);
+    lineWrap.style.height=docH+'px';
+    lineSvg.setAttribute('viewBox',`0 0 100 ${docH}`);    // viewBox y maps 1:1 to document px
+    clipRect.setAttribute('width',100);
+    let d='M 50 0',toggle=true;
+    for(let y=SEG;y<=docH+SEG;y+=SEG){
+      const x=toggle?82:18;              // swing left/right across the page
+      d+=` Q ${x} ${Math.min(y-SEG/2,docH)} 50 ${Math.min(y,docH)}`;
+      toggle=!toggle;
+    }
+    lineGhost.setAttribute('d',d);
+    linePaths.forEach(p=>p.setAttribute('d',d));
+    updateLine();
+  }
+
+  function updateLine(){
+    const e=document.documentElement;
+    const vh=e.clientHeight;
+    const scrollTop=e.scrollTop||document.body.scrollTop||0;
+    const maxScroll=(docH-vh)||1;
+    const p=Math.min(1,Math.max(0,scrollTop/maxScroll));   // scroll progress 0..1
+    // head starts HEAD*vh down the screen and drifts to the bottom edge by the end.
+    const headOffset=vh*(HEAD+(1-HEAD)*p);
+    const headY=Math.min(docH,scrollTop+headOffset);
+    clipRect.setAttribute('height',headY);
+    // glowing head dot rides the tip (pixel space, so it isn't stretched by the SVG)
+    const w=lineWrap.clientWidth||innerWidth;
+    lineHead.style.left=(headX(headY)/100*w)+'px';
+    lineHead.style.top=headY+'px';
+    // top scroll-progress bar tracks true scroll position
+    prog.style.width=(p*100)+'%';
+  }
+
+  // one update per animation frame so it stays in lockstep with the scroll
+  let ticking=false;
+  function onScroll(){
+    if(ticking) return; ticking=true;
+    requestAnimationFrame(()=>{updateLine();ticking=false;});
+  }
+  addEventListener('scroll',onScroll,{passive:true});
+
+  // rebuild geometry only when the page size actually changes
+  let lastW=innerWidth;
+  addEventListener('resize',()=>{ if(innerWidth!==lastW||Math.abs(document.documentElement.scrollHeight-docH)>40){lastW=innerWidth;buildLine();} });
+  addEventListener('load',buildLine);
+  buildLine();
+  // rebuild after fonts/layout/reveal animations settle the final page height
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(buildLine);
+  [300,800,1200,2500].forEach(t=>setTimeout(buildLine,t));
+  // keep the path matched to the true height even if it grows later
+  new ResizeObserver(()=>{ if(Math.abs(document.documentElement.scrollHeight-docH)>40) buildLine(); }).observe(document.body);
+
+  // reveal + svg draw observer
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{
+    if(e.isIntersecting){e.target.classList.add('in');
+      if(e.target.classList.contains('reveal')) io.unobserve(e.target);}
+  });},{threshold:.18});
+  document.querySelectorAll('.reveal,.draw').forEach(el=>io.observe(el));
+
+  // count-up stats
+  const sio=new IntersectionObserver((es)=>{es.forEach(e=>{
+    if(!e.isIntersecting) return; const el=e.target,t=+el.dataset.target;
+    let n=0;const step=Math.max(1,t/60);
+    const tick=()=>{n+=step;if(n>=t){el.textContent=t+'+';}else{el.textContent=Math.floor(n);requestAnimationFrame(tick);}};
+    tick();sio.unobserve(el);
+  });},{threshold:.6});
+  document.querySelectorAll('.num').forEach(el=>sio.observe(el));
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+# Large source assets not used by the site
+*.pdf
+pages/
+out.txt
+
+# Tooling / editor
+.claude/
+.DS_Store
+Thumbs.db
